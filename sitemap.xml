@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.kairosone.shop/</loc>
-  </url>
+  <url><loc>https://kairosone.shop/</loc></url>
+  <url><loc>https://kairosone.shop/en/</loc></url>
+  <url><loc>https://kairosone.shop/pt-br/</loc></url>
+  <url><loc>https://kairosone.shop/es/</loc></url>
 </urlset>
