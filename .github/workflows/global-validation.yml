@@ -1,0 +1,65 @@
+name: KAIROS Global Static Validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate multilingual pages and SEO
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, sys
+          root = Path(".")
+          pages = {
+              "index.html": "en",
+              "en/index.html": "en",
+              "pt-br/index.html": "pt-BR",
+              "es/index.html": "es",
+          }
+          errors = []
+          for filename, lang in pages.items():
+              path = root / filename
+              if not path.is_file():
+                  errors.append(f"Missing page: {filename}")
+                  continue
+              html = path.read_text(encoding="utf-8")
+              checks = {
+                  "correct language": f'<html lang="{lang}">' in html,
+                  "canonical URL": 'rel="canonical"' in html,
+                  "hreflang alternates": 'hreflang="en"' in html and 'hreflang="pt-BR"' in html and 'hreflang="es"' in html,
+                  "language selector": 'id="language"' in html,
+                  "mobile menu button": 'class="menu"' in html,
+                  "shared stylesheet": '/assets/css/global.css' in html,
+                  "shared script": '/assets/js/global.js' in html,
+              }
+              for label, ok in checks.items():
+                  if not ok: errors.append(f"{filename}: missing {label}")
+          css = Path("assets/css/global.css")
+          js = Path("assets/js/global.js")
+          if not css.is_file(): errors.append("Missing assets/css/global.css")
+          if not js.is_file(): errors.append("Missing assets/js/global.js")
+          elif 'querySelector(".menu")' not in js.read_text(encoding="utf-8"):
+              errors.append("global.js does not initialize the mobile menu")
+          robots = Path("robots.txt").read_text(encoding="utf-8")
+          if "https://kairosone.shop/sitemap.xml" not in robots:
+              errors.append("robots.txt sitemap host does not match canonical domain")
+          sitemap = Path("sitemap.xml").read_text(encoding="utf-8")
+          for route in ["/", "/en/", "/pt-br/", "/es/"]:
+              if f"https://kairosone.shop{route}" not in sitemap:
+                  errors.append(f"sitemap.xml missing {route}")
+          if errors:
+              print("\n".join("ERROR: " + e for e in errors))
+              sys.exit(1)
+          print("PASS: multilingual pages, navigation, shared assets, robots and sitemap.")
+          PY
